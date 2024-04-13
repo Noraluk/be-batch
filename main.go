@@ -3,7 +3,6 @@ package main
 import (
 	"be-batch/jobs"
 	pokemonlist "be-batch/jobs/pokemon"
-	pokemonListEtt "be-batch/jobs/pokemon/entities"
 	"be-batch/pkg/base"
 	"be-batch/pkg/config"
 	"be-batch/pkg/database"
@@ -28,21 +27,8 @@ func main() {
 		panic(err)
 	}
 
-	db := database.GetDatabase()
-	db.AutoMigrate(&pokemonListEtt.Pokemon{})
-	db.AutoMigrate(&pokemonListEtt.PokemonType{})
-	db.AutoMigrate(&pokemonListEtt.PokemonAbility{})
-	db.AutoMigrate(&pokemonListEtt.PokemonWeakness{})
-	db.AutoMigrate(&pokemonListEtt.PokemonStat{})
-
-	pokemonJob := pokemonlist.NewPokemonJob(
-		base.NewBaseRepository[any](),
-		base.NewBaseRepository[[]pokemonListEtt.Pokemon](),
-		base.NewBaseRepository[[]pokemonListEtt.PokemonType](),
-		base.NewBaseRepository[[]pokemonListEtt.PokemonAbility](),
-		base.NewBaseRepository[[]pokemonListEtt.PokemonStat](),
-		base.NewBaseRepository[[]pokemonListEtt.PokemonWeakness](),
-	)
+	repository := base.NewBaseRepository[any]()
+	pokemonJob := pokemonlist.NewPokemonJob(repository)
 
 	jobs := []jobs.Job{
 		pokemonJob,

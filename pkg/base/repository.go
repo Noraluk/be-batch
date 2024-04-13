@@ -14,10 +14,10 @@ type BaseRepository[T any] interface {
 	First(dest interface{}, conds ...interface{}) BaseRepository[T]
 	Last(dest interface{}, conds ...interface{}) BaseRepository[T]
 	Find(dest interface{}, conds ...interface{}) BaseRepository[T]
-	Create(t *T) BaseRepository[T]
+	Create(t interface{}) BaseRepository[T]
 	FirstOrCreate(dest interface{}, conds ...interface{}) BaseRepository[T]
 	Select(query interface{}, args ...interface{}) BaseRepository[T]
-	Save(t *T) BaseRepository[T]
+	Save(t interface{}) BaseRepository[T]
 	Update(column string, value interface{}) BaseRepository[T]
 	Updates(values interface{}) BaseRepository[T]
 	Delete(value interface{}, conds ...interface{}) BaseRepository[T]
@@ -75,8 +75,8 @@ func (b baseRepository[T]) Find(dest interface{}, conds ...interface{}) BaseRepo
 	return Wrap[T](b.db.Find(dest, conds...))
 }
 
-func (b baseRepository[T]) Create(t *T) BaseRepository[T] {
-	return Wrap[T](b.db.Create(&t))
+func (b baseRepository[T]) Create(t interface{}) BaseRepository[T] {
+	return Wrap[T](b.db.Create(t))
 }
 
 func (b baseRepository[T]) FirstOrCreate(dest interface{}, conds ...interface{}) BaseRepository[T] {
@@ -87,8 +87,8 @@ func (b baseRepository[T]) Select(query interface{}, args ...interface{}) BaseRe
 	return Wrap[T](b.db.Select(query, args...))
 }
 
-func (b baseRepository[T]) Save(t *T) BaseRepository[T] {
-	return Wrap[T](b.db.Save(&t))
+func (b baseRepository[T]) Save(t interface{}) BaseRepository[T] {
+	return Wrap[T](b.db.Save(t))
 }
 
 func (b baseRepository[T]) Update(column string, value interface{}) BaseRepository[T] {

@@ -15,33 +15,18 @@ import (
 )
 
 type pokemonJob struct {
-	id                          string
-	repository                  base.BaseRepository[any]
-	pokemonsRepository          base.BaseRepository[[]entities.Pokemon]
-	pokemonTypesRepository      base.BaseRepository[[]entities.PokemonType]
-	pokemonAbilitiesRepository  base.BaseRepository[[]entities.PokemonAbility]
-	pokemonStatsRepository      base.BaseRepository[[]entities.PokemonStat]
-	pokemonWeaknessesRepository base.BaseRepository[[]entities.PokemonWeakness]
-	logger                      logger.Logger
+	id         string
+	repository base.BaseRepository[any]
+	logger     logger.Logger
 }
 
 func NewPokemonJob(
 	repository base.BaseRepository[any],
-	pokemonsRepository base.BaseRepository[[]entities.Pokemon],
-	pokemonTypeRepository base.BaseRepository[[]entities.PokemonType],
-	pokemonAbilitiesRepository base.BaseRepository[[]entities.PokemonAbility],
-	pokemonStatsRepository base.BaseRepository[[]entities.PokemonStat],
-	pokemonWeaknessesRepository base.BaseRepository[[]entities.PokemonWeakness],
 ) jobs.Job {
 	return &pokemonJob{
-		id:                          "pokemon",
-		repository:                  repository,
-		pokemonsRepository:          pokemonsRepository,
-		pokemonTypesRepository:      pokemonTypeRepository,
-		pokemonAbilitiesRepository:  pokemonAbilitiesRepository,
-		pokemonStatsRepository:      pokemonStatsRepository,
-		pokemonWeaknessesRepository: pokemonWeaknessesRepository,
-		logger:                      logger.WithPrefix("job/pokemon"),
+		id:         "pokemon",
+		repository: repository,
+		logger:     logger.WithPrefix("job/pokemon"),
 	}
 }
 
@@ -140,27 +125,27 @@ func (j pokemonJob) Run() error {
 		return err
 	}
 
-	err = j.pokemonsRepository.Create(&pokemons).Error()
+	err = j.repository.Create(&pokemons).Error()
 	if err != nil {
 		return err
 	}
 
-	err = j.pokemonTypesRepository.Create(&pokemonTypes).Error()
+	err = j.repository.Create(&pokemonTypes).Error()
 	if err != nil {
 		return err
 	}
 
-	err = j.pokemonAbilitiesRepository.Create(&pokemonAbilities).Error()
+	err = j.repository.Create(&pokemonAbilities).Error()
 	if err != nil {
 		return err
 	}
 
-	err = j.pokemonStatsRepository.Create(&pokemonStats).Error()
+	err = j.repository.Create(&pokemonStats).Error()
 	if err != nil {
 		return err
 	}
 
-	err = j.pokemonWeaknessesRepository.Create(&pokemonWeaknesses).Error()
+	err = j.repository.Create(&pokemonWeaknesses).Error()
 	if err != nil {
 		return err
 	}
