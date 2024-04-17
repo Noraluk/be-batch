@@ -87,13 +87,13 @@ func (j pokemonJob) Run() error {
 	}()
 
 	wg := &sync.WaitGroup{}
-	for _, p := range pokemonsResp.Results {
+	for i, p := range pokemonsResp.Results {
 		wg.Add(1)
-		go func(name string) {
+		go func(index int, name string) {
 			defer wg.Done()
-			pd := j.getPokemonDetail(name)
+			pd := j.getPokemonDetail(index+1, name)
 			pokemonDetailCh <- pd
-		}(p.Name)
+		}(i, p.Name)
 	}
 
 	wg.Wait()
@@ -153,7 +153,7 @@ func (j pokemonJob) Run() error {
 	return nil
 }
 
-func (j pokemonJob) getPokemonDetail(name string) models.PokemonDetail {
+func (j pokemonJob) getPokemonDetail(index int, name string) models.PokemonDetail {
 	j.logger.Wrap("searching pokemon : %s", name).Info()
 	pokemon, err := j.getPokemon(name)
 	if err != nil {
@@ -188,6 +188,7 @@ func (j pokemonJob) getPokemonDetail(name string) models.PokemonDetail {
 
 	var minimumLevel int = 1
 	var evolvedPokemonID *int = nil
+	var basePokemonID int
 
 	wg.Add(1)
 	go func() {
@@ -196,6 +197,8 @@ func (j pokemonJob) getPokemonDetail(name string) models.PokemonDetail {
 		pokemonSpecies, _ := j.getPokemonSpecies(pokemon.Species.URL)
 		if len(pokemonSpecies.EvolutionChain.URL) > 0 {
 			pokemonEvolutionChainResp, _ := j.getPokemonEvolutionChain(pokemonSpecies.EvolutionChain.URL)
+			basePokemon, _ := j.getPokemon(pokemonEvolutionChainResp.Chain.Species.Name)
+			basePokemonID = basePokemon.ID
 			if pokemon.Name == pokemonEvolutionChainResp.Chain.Species.Name && len(pokemonEvolutionChainResp.Chain.EvolvesTo) > 0 {
 				secondPokemon, _ := j.getPokemon(pokemonEvolutionChainResp.Chain.EvolvesTo[0].Species.Name)
 				evolvedPokemonID = &secondPokemon.ID
@@ -236,7 +239,8 @@ func (j pokemonJob) getPokemonDetail(name string) models.PokemonDetail {
 
 	return models.PokemonDetail{
 		Pokemon: entities.Pokemon{
-			ID:                                   pokemon.ID,
+			ID:                                   index,
+			PokemonID:                            pokemon.ID,
 			Name:                                 pokemon.Name,
 			SpriteFrontDefaultShowdownURL:        pokemon.Sprites.Other.Showdown.FrontDefault,
 			SpriteFrontDefaultOfficialArtworkURL: pokemon.Sprites.Other.OfficialArtwork.FrontDefault,
@@ -245,6 +249,7 @@ func (j pokemonJob) getPokemonDetail(name string) models.PokemonDetail {
 			BaseExperience:                       pokemon.BaseExperience,
 			MinimumLevel:                         minimumLevel,
 			EvolvedPokemonID:                     evolvedPokemonID,
+			BasePokemonID:                        basePokemonID,
 		},
 		PokemonTypes:      pokemonTypes,
 		PokemonStats:      pokemonStats,
