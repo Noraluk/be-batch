@@ -35,24 +35,37 @@ func (j pokemonJob) GetID() string {
 }
 
 func (j pokemonJob) Run() error {
-	var err error
+	errCh := make(chan error, 1)
 
-	var resp *http.Response
-	resp, err = http.Get("https://pokeapi.co/api/v2/pokemon?offset=0&limit=1302")
-	if err != nil {
-		return err
+	j.getPokemons(errCh)
+
+	close(errCh)
+
+	if e := <-errCh; e != nil {
+		return e
 	}
 
-	var body []byte
-	body, err = io.ReadAll(resp.Body)
+	return nil
+}
+
+func (j pokemonJob) getPokemons(errCh chan error) {
+	resp, err := http.Get("https://pokeapi.co/api/v2/pokemon?offset=0&limit=1302")
 	if err != nil {
-		return err
+		errCh <- err
+		return
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		errCh <- err
+		return
 	}
 
 	var pokemonsResp models.PokemonsResponse
 	err = json.Unmarshal(body, &pokemonsResp)
 	if err != nil {
-		return err
+		errCh <- err
+		return
 	}
 
 	pokemons := []entities.Pokemon{}
@@ -61,9 +74,7 @@ func (j pokemonJob) Run() error {
 	pokemonTypes := []entities.PokemonType{}
 	pokemonWeaknesses := []entities.PokemonWeakness{}
 
-	errs := make([]error, 0)
 	pokemonDetailCh := make(chan models.PokemonDetail)
-	errCh := make(chan error)
 	stopChannel := make(chan struct{})
 	channelWg := &sync.WaitGroup{}
 	channelWg.Add(1)
@@ -71,8 +82,6 @@ func (j pokemonJob) Run() error {
 		defer channelWg.Done()
 		for {
 			select {
-			case e := <-errCh:
-				errs = append(errs, e)
 			case pd := <-pokemonDetailCh:
 				pokemons = append(pokemons, pd.Pokemon)
 				pokemonAbilities = append(pokemonAbilities, pd.PokemonAbilities...)
@@ -86,71 +95,79 @@ func (j pokemonJob) Run() error {
 		}
 	}()
 
-	wg := &sync.WaitGroup{}
+	wg2 := &sync.WaitGroup{}
 	for i, p := range pokemonsResp.Results {
-		wg.Add(1)
+		wg2.Add(1)
 		go func(index int, name string) {
-			defer wg.Done()
+			defer wg2.Done()
 			pd := j.getPokemonDetail(index+1, name)
 			pokemonDetailCh <- pd
 		}(i, p.Name)
 	}
 
-	wg.Wait()
+	wg2.Wait()
 	close(stopChannel)
 	channelWg.Wait()
 
 	err = j.repository.Where("1 = 1").Delete(&entities.Pokemon{}).Error()
 	if err != nil {
-		return err
+		errCh <- err
+		return
 	}
 
 	err = j.repository.Where("1 = 1").Delete(&entities.PokemonType{}).Error()
 	if err != nil {
-		return err
+		errCh <- err
+		return
 	}
 
 	err = j.repository.Where("1 = 1").Delete(&entities.PokemonAbility{}).Error()
 	if err != nil {
-		return err
+		errCh <- err
+		return
 	}
 
 	err = j.repository.Where("1 = 1").Delete(&entities.PokemonStat{}).Error()
 	if err != nil {
-		return err
+		errCh <- err
+		return
 	}
 
 	err = j.repository.Where("1 = 1").Delete(&entities.PokemonWeakness{}).Error()
 	if err != nil {
-		return err
+		errCh <- err
+		return
 	}
 
 	err = j.repository.Create(&pokemons).Error()
 	if err != nil {
-		return err
+		errCh <- err
+		return
 	}
 
 	err = j.repository.Create(&pokemonTypes).Error()
 	if err != nil {
-		return err
+		errCh <- err
+		return
 	}
 
 	err = j.repository.Create(&pokemonAbilities).Error()
 	if err != nil {
-		return err
+		errCh <- err
+		return
 	}
 
 	err = j.repository.Create(&pokemonStats).Error()
 	if err != nil {
-		return err
+		errCh <- err
+		return
 	}
 
 	err = j.repository.Create(&pokemonWeaknesses).Error()
 	if err != nil {
-		return err
+		errCh <- err
+		return
 	}
-
-	return nil
 }
 
 func (j pokemonJob) getPokemonDetail(index int, name string) models.PokemonDetail {
@@ -274,7 +291,7 @@ func (j pokemonJob) getPokemon(name string) (models.PokemonResponse, error) {
 	var pokemon models.PokemonResponse
 	err = json.Unmarshal(body, &pokemon)
 	if err != nil {
-		j.logger.Wrap("unmarshal pokemon %s response, error: %v", name, err).Error()
+		j.logger.Wrap("unmarshal pokemon %s response %s, error: %v", name, string(body), err).Error()
 		return models.PokemonResponse{}, err
 	}
 

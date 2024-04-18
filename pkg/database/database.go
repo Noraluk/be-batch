@@ -2,6 +2,7 @@ package database
 
 import (
 	pokemonEtt "be-batch/jobs/pokemon/entities"
+	pokemonItemEtt "be-batch/jobs/pokemon_item/entities"
 	"be-batch/pkg/config"
 	"fmt"
 
@@ -26,6 +27,7 @@ func Init() error {
 	db.AutoMigrate(&pokemonEtt.PokemonAbility{})
 	db.AutoMigrate(&pokemonEtt.PokemonWeakness{})
 	db.AutoMigrate(&pokemonEtt.PokemonStat{})
+	db.AutoMigrate(&pokemonItemEtt.PokemonItem{})
 
 	return nil
 }

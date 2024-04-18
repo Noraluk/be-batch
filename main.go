@@ -2,7 +2,8 @@ package main
 
 import (
 	"be-batch/jobs"
-	pokemonlist "be-batch/jobs/pokemon"
+	"be-batch/jobs/pokemon"
+	pokemonitem "be-batch/jobs/pokemon_item"
 	"be-batch/pkg/base"
 	"be-batch/pkg/config"
 	"be-batch/pkg/database"
@@ -28,10 +29,12 @@ func main() {
 	}
 
 	repository := base.NewBaseRepository[any]()
-	pokemonJob := pokemonlist.NewPokemonJob(repository)
+	pokemonJob := pokemon.NewPokemonJob(repository)
+	pokemonItemJob := pokemonitem.NewPokemonItemJob(repository)
 
 	jobs := []jobs.Job{
 		pokemonJob,
+		pokemonItemJob,
 	}
 
 	jobMap := make(map[string]func() error, 0)
